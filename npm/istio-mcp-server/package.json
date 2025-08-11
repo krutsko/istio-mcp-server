@@ -1,7 +1,7 @@
 {
   "name": "istio-mcp-server",
   "version": "0.0.0",
-  "description": "Model Context Protocol (MCP) server for Istio",
+  "description": "Model Context Protocol (MCP) server for Istio service mesh - provides AI assistants with read-only access to Istio resources, Virtual Services, Destination Rules, Gateways, and Envoy proxy configurations in Kubernetes clusters",
   "main": "./bin/index.js",
   "bin": {
     "istio-mcp-server": "bin/index.js"
@@ -20,12 +20,25 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "istio",
     "kubernetes",
-    "model context protocol",
-    "model",
-    "context",
-    "protocol"
+    "service-mesh",
+    "envoy",
+    "proxy",
+    "virtual-service",
+    "destination-rule",
+    "gateway",
+    "authorization-policy",
+    "telemetry",
+    "ai-assistant",
+    "cli-tool",
+    "read-only",
+    "safe-operations",
+    "microservices",
+    "networking",
+    "security",
+    "observability"
   ],
   "author": {
     "name": "Sergey Krutsko",

@@ -1,72 +1,101 @@
 # Istio MCP Server
 
-A Model Context Protocol (MCP) server for Istio service mesh operations.
+A **Model Context Protocol (MCP) server** that provides AI assistants and developers with **read-only access** to Istio service mesh resources in Kubernetes clusters. This server enables intelligent querying of Istio configurations, Virtual Services, Destination Rules, Gateways, and Envoy proxy configurations through a safe, non-destructive interface.
 
-## Overview
+## 🚀 Overview
 
-This project provides an MCP server that allows AI assistants and other MCP clients to interact with Istio service mesh resources in Kubernetes clusters. **This server is designed for read-only operations only - no destructive commands are allowed.** It provides comprehensive tools for querying Istio resources including Virtual Services, Destination Rules, Gateways, and proxy configurations without any risk of modifying or deleting resources.
+The Istio MCP Server bridges the gap between AI assistants and Istio service mesh operations by implementing the Model Context Protocol. It provides comprehensive tools for querying Istio resources including Virtual Services, Destination Rules, Gateways, and proxy configurations **without any risk of modifying or deleting resources**.
 
-## Features
+**Key Benefits:**
+- 🔒 **100% Read-Only Operations** - No destructive commands allowed
+- 🤖 **AI Assistant Friendly** - Designed for MCP protocol integration
+- 🔍 **Comprehensive Istio Access** - Covers all major Istio resource types
+- 🛡️ **Safe by Design** - Zero risk of accidental resource modifications
+- 🌐 **Multi-Protocol Support** - STDIO, SSE, and HTTP protocols
+- 📊 **Rich Observability** - Access to Envoy proxy configurations and telemetry
 
-- **Virtual Services**: Query Istio Virtual Services (read-only)
-- **Destination Rules**: Query Istio Destination Rules (read-only)
-- **Gateways**: Query Istio Gateways (read-only)
-- **Service Entries**: Query Istio Service Entries (read-only)
-- **Security Policies**: Query Authorization Policies and Peer Authentications (read-only)
-- **Proxy Configuration**: Access Envoy proxy configurations including clusters, listeners, routes, and endpoints (read-only)
-- **Configuration Management**: Get comprehensive Istio configuration summaries (read-only)
-- **Multiple Protocols**: Support for STDIO, SSE, and HTTP protocols
-- **Safe Operations**: All operations are read-only with no destructive commands allowed
+## ✨ Features
 
-## Quick Start
+### 🔧 Core Istio Resources (Read-Only)
+- **Virtual Services**: Query Istio Virtual Services and routing rules
+- **Destination Rules**: Query Istio Destination Rules and traffic policies
+- **Gateways**: Query Istio Gateways and ingress configurations
+- **Service Entries**: Query Istio Service Entries and external services
+- **Envoy Filters**: Query Istio Envoy Filters and custom configurations
+
+### 🛡️ Security & Policies (Read-Only)
+- **Authorization Policies**: Query Istio Authorization Policies
+- **Peer Authentications**: Query Istio Peer Authentication policies
+- **Security Configurations**: Access Istio security settings
+
+### 📊 Observability & Telemetry (Read-Only)
+- **Telemetry Configurations**: Query Istio telemetry settings
+- **Proxy Status**: Get Envoy proxy health and status information
+- **Configuration Summaries**: Comprehensive Istio configuration overviews
+
+### 🌐 Envoy Proxy Access (Read-Only)
+- **Cluster Configuration**: Access Envoy cluster configurations
+- **Listener Configuration**: Access Envoy listener configurations
+- **Route Configuration**: Access Envoy route configurations
+- **Endpoint Configuration**: Access Envoy endpoint configurations
+- **Bootstrap Configuration**: Access Envoy bootstrap configurations
+- **Full Configuration Dumps**: Complete Envoy configuration snapshots
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Go 1.24 or later
-- Access to a Kubernetes cluster with Istio installed
-- kubectl configured with appropriate permissions
-- istioctl installed (for proxy configuration features)
+- **Go 1.24+** for building from source
+- **Kubernetes cluster** with Istio installed
+- **kubectl** configured with appropriate permissions
+- **istioctl** installed (for advanced proxy configuration features)
 
-### Build and Run
+### Installation
 
 ```bash
-# Initialize dependencies
-make deps
+# Install via npm (recommended)
+npm install -g istio-mcp-server
 
-# Build the server
+# Or build from source
+git clone https://github.com/krutsko/istio-mcp-server.git
+cd istio-mcp-server
 make build
+```
 
-# Run the server (STDIO mode)
-make run
+### Basic Usage
 
-# Or run with specific options
+```bash
+# Run in STDIO mode (for MCP clients)
 ./bin/istio-mcp-server --kubeconfig ~/.kube/config
 
 # Run SSE server on port 8080
 ./bin/istio-mcp-server --sse-port 8080
 
-# Show help
+# Run HTTP server on port 8080
+./bin/istio-mcp-server --http-port 8080
+
+# Show all available options
 ./bin/istio-mcp-server --help
 ```
 
-### Available Tools
+## 🛠️ Available Tools
 
-#### Networking Resources
+### 🌐 Networking Resources
 - `get-virtual-services` - List Virtual Services in a namespace
 - `get-destination-rules` - List Destination Rules in a namespace  
 - `get-gateways` - List Gateways in a namespace
 - `get-service-entries` - List Service Entries in a namespace
 
-#### Security Resources
+### 🛡️ Security Resources
 - `get-authorization-policies` - List Authorization Policies in a namespace
 - `get-peer-authentications` - List Peer Authentications in a namespace
 
-#### Configuration Resources
+### ⚙️ Configuration Resources
 - `get-envoy-filters` - List Envoy Filters in a namespace
 - `get-telemetry` - List Telemetry configurations in a namespace
 - `get-istio-config` - Get comprehensive Istio configuration summary
 
-#### Proxy Configuration
+### 🔍 Proxy Configuration
 - `get-proxy-clusters` - Get Envoy cluster configuration from a pod
 - `get-proxy-listeners` - Get Envoy listener configuration from a pod
 - `get-proxy-routes` - Get Envoy route configuration from a pod
@@ -75,23 +104,41 @@ make run
 - `get-proxy-config-dump` - Get full Envoy configuration dump from a pod
 - `get-proxy-status` - Get proxy status information
 
-## Configuration
+## ⚙️ Configuration
 
 The server supports various configuration options:
 
-- `--kubeconfig`: Path to kubeconfig file
-- `--sse-port`: Start SSE server on specified port
-- `--http-port`: Start HTTP server on specified port
-- `--log-level`: Set logging level (0-9)
-- `--profile`: MCP profile to use (default: "full")
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--kubeconfig` | Path to kubeconfig file | `~/.kube/config` |
+| `--sse-port` | Start SSE server on specified port | Disabled |
+| `--http-port` | Start HTTP server on specified port | Disabled |
+| `--log-level` | Set logging level (0-9) | `0` |
+| `--profile` | MCP profile to use | `"full"` |
 
-**Note**: This server operates in read-only mode by design. All operations are safe and non-destructive.
+**🔒 Security Note**: This server operates in read-only mode by design. All operations are safe and non-destructive.
 
-## Development
+## 🏗️ Architecture
+
+The Istio MCP Server follows clean architecture principles with clear separation of concerns:
+
+```
+istio-mcp-server/
+├── cmd/                    # Application entrypoints and CLI commands
+├── pkg/
+│   ├── istio-mcp-server/  # Core application logic and CLI handling
+│   ├── istio/             # Istio client and resource management
+│   ├── mcp/               # MCP server implementation and tool definitions
+│   ├── version/           # Version information and build metadata
+│   └── output/            # Output formatting and display utilities
+└── npm/                   # NPM package distribution
+```
+
+## 🧪 Development
 
 ```bash
 # Install development dependencies
-make dev-deps
+make deps
 
 # Format code
 make fmt
@@ -104,22 +151,27 @@ make test
 
 # Clean build artifacts
 make clean
+
+# Build for all platforms
+make build-all-platforms
+
+# Test release process
+make test-release
 ```
 
-## Architecture
+## 🔗 Related Projects
 
-The Istio MCP Server is built with a clean, modular architecture:
+- **[Model Context Protocol](https://modelcontextprotocol.io/)** - The protocol specification
+- **[Istio](https://istio.io/)** - Service mesh platform
+- **[Kubernetes](https://kubernetes.io/)** - Container orchestration platform
+- **[Envoy Proxy](https://www.envoyproxy.io/)** - High-performance proxy
 
-- **cmd/**: Application entrypoints and CLI commands
-- **pkg/istio-mcp-server/**: Core application logic and CLI handling
-- **pkg/istio/**: Istio client and resource management
-- **pkg/mcp/**: MCP server implementation and tool definitions
-- **pkg/version/**: Version information
-- **pkg/output/**: Output formatting utilities
+## 📄 License
 
-The server follows Go best practices with proper error handling, context propagation, and clean separation of concerns.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-## License
+## 🤝 Contributing
 
-This project is licensed under the MIT License.
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
 
