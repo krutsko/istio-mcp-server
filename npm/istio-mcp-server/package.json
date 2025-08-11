@@ -1,0 +1,39 @@
+{
+  "name": "istio-mcp-server",
+  "version": "0.0.0",
+  "description": "Model Context Protocol (MCP) server for Istio",
+  "main": "./bin/index.js",
+  "bin": {
+    "istio-mcp-server": "bin/index.js"
+  },
+  "optionalDependencies": {
+    "istio-mcp-server-darwin-amd64": "0.0.0",
+    "istio-mcp-server-darwin-arm64": "0.0.0",
+    "istio-mcp-server-linux-amd64": "0.0.0",
+    "istio-mcp-server-linux-arm64": "0.0.0",
+    "istio-mcp-server-windows-amd64": "0.0.0",
+    "istio-mcp-server-windows-arm64": "0.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krutsko/istio-mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "istio",
+    "kubernetes"
+    "model context protocol",
+    "model",
+    "context",
+    "protocol"
+  ],
+  "author": {
+    "name": "Sergey Krutsko",
+    "url": "https://github.com/krutsko"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/krutsko/istio-mcp-server/issues"
+  },
+  "homepage": "https://github.com/krutsko/istio-mcp-server#readme"
+}

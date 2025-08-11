@@ -3,7 +3,6 @@
 node_modules/
 
 # Build artifacts
-istio-mcp-server
 !cmd/istio-mcp-server
 !pkg/istio-mcp-server
 
