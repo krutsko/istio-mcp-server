@@ -1,10 +1,26 @@
+_output/
 .idea/
+.vscode/
 .docusaurus/
 node_modules/
 
-# Build artifacts
+.npmrc
+istio-mcp-server
 !cmd/istio-mcp-server
 !pkg/istio-mcp-server
+npm/istio-mcp-server/README.md
+npm/istio-mcp-server/LICENSE
+!npm/istio-mcp-server
+istio-mcp-server-darwin-amd64
+!npm/istio-mcp-server-darwin-amd64/
+istio-mcp-server-darwin-arm64
+!npm/istio-mcp-server-darwin-arm64
+istio-mcp-server-linux-amd64
+!npm/istio-mcp-server-linux-amd64
+istio-mcp-server-linux-arm64
+!npm/istio-mcp-server-linux-arm64
+istio-mcp-server-windows-amd64.exe
+istio-mcp-server-windows-arm64.exe
 
 # OS specific files
 .DS_Store
