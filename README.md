@@ -103,7 +103,7 @@ code-insiders --add-mcp '{"name":"istio","command":"npx","args":["istio-mcp-serv
 
 Install the Istio MCP server extension in Cursor by pressing the following link:
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=istio-mcp-server&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMm5weCUyMC15JTIwaXN0aW8tbWNwLXNlcnZlciU0MGxhdGVzdCUyMiU3RA%3D%3D)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=istio-mcp-server&config=eyJjb21tYW5kIjoibnB4IC15IGlzdGlvLW1jcC1zZXJ2ZXJAbGF0ZXN0In0%3D)
 
 
 Alternatively, you can install the extension manually by editing the `mcp.json` file:
