@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/istio-mcp-server/pkg/istio-mcp-server/cmd"
+	"github.com/krutsko/istio-mcp-server/pkg/istio-mcp-server/cmd"
 )
 
 // TestMain tests the main function and cmd package integration

@@ -1,4 +1,4 @@
-module github.com/istio-mcp-server
+module github.com/krutsko/istio-mcp-server
 
 go 1.24.1
 

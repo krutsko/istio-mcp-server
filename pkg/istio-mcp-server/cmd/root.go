@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/istio-mcp-server/pkg/mcp"
-	"github.com/istio-mcp-server/pkg/version"
+	"github.com/krutsko/istio-mcp-server/pkg/mcp"
+	"github.com/krutsko/istio-mcp-server/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"

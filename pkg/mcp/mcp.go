@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/istio-mcp-server/pkg/istio"
-	"github.com/istio-mcp-server/pkg/version"
+	"github.com/krutsko/istio-mcp-server/pkg/istio"
+	"github.com/krutsko/istio-mcp-server/pkg/version"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
