@@ -39,5 +39,6 @@ jobs:
             LICENSE.md
             istio-mcp-server-*
       - name: Publish npm
-        run:
-          make npm-publish
+        run: make npm-publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
