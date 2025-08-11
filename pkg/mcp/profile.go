@@ -145,6 +145,15 @@ func (s *Server) initSecurityTools() []server.ServerTool {
 func (s *Server) initConfigurationTools() []server.ServerTool {
 	return []server.ServerTool{
 		{
+			Tool: mcp.NewTool("discover-istio-namespaces",
+				mcp.WithDescription("Discover namespaces that have pods with Istio sidecars and rank them by injection density. This tool helps identify the most probable best namespace for Istio operations by analyzing which namespaces have the most Istio-injected workloads. Use this to prioritize which namespaces to investigate first for Istio configuration and traffic analysis."),
+				mcp.WithTitleAnnotation("Istio: Namespace Discovery"),
+				mcp.WithReadOnlyHintAnnotation(true),
+				mcp.WithDestructiveHintAnnotation(false),
+			),
+			Handler: s.discoverIstioNamespaces,
+		},
+		{
 			Tool: mcp.NewTool("get-envoy-filters",
 				mcp.WithDescription("Get Istio Envoy Filters from any namespace. Envoy Filters allow custom configuration of Envoy proxy behavior, including custom filters, listeners, and clusters. Use this to inspect advanced Istio service mesh configurations."),
 				mcp.WithString("namespace",
@@ -317,6 +326,18 @@ func (s *Server) initProxyConfigTools() []server.ServerTool {
 			),
 			Handler: s.getProxyStatus,
 		},
+		{
+			Tool: mcp.NewTool("get-istio-analyze",
+				mcp.WithDescription("Analyze Istio configuration and report potential issues, misconfigurations, and best practice violations. This tool runs 'istioctl analyze' to provide comprehensive analysis of your Istio service mesh configuration."),
+				mcp.WithString("namespace",
+					mcp.Description("Namespace to analyze (optional). If specified, analyzes only the specified namespace. If not provided, analyzes the entire cluster."),
+				),
+				mcp.WithTitleAnnotation("Istio: Configuration Analysis"),
+				mcp.WithReadOnlyHintAnnotation(true),
+				mcp.WithDestructiveHintAnnotation(false),
+			),
+			Handler: s.getIstioAnalyze,
+		},
 	}
 }
 
@@ -428,6 +449,12 @@ func (s *Server) checkExternalDependencyAvailability(ctx context.Context, ctr mc
 	}
 
 	content, err := s.i.CheckExternalDependencyAvailability(ctx, serviceName, externalHost, namespace)
+	return NewTextResult(content, err), nil
+}
+
+// Handler method for Istio namespace discovery
+func (s *Server) discoverIstioNamespaces(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	content, err := s.i.DiscoverNamespacesWithSidecars(ctx)
 	return NewTextResult(content, err), nil
 }
 
@@ -549,6 +576,17 @@ func (s *Server) getProxyStatus(ctx context.Context, ctr mcp.CallToolRequest) (*
 		content, err = s.i.ProxyConfig.GetProxyStatus(ctx)
 	}
 
+	return NewTextResult(content, err), nil
+}
+
+// getIstioAnalyze performs Istio configuration analysis
+func (s *Server) getIstioAnalyze(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	namespace := ""
+	if ns := ctr.GetArguments()["namespace"]; ns != nil {
+		namespace = ns.(string)
+	}
+
+	content, err := s.i.ProxyConfig.GetAnalyze(ctx, namespace)
 	return NewTextResult(content, err), nil
 }
 

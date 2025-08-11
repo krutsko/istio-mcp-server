@@ -3,7 +3,6 @@ package istio
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -69,6 +68,14 @@ func (p *ProxyConfigClient) GetProxyStatusForPod(ctx context.Context, namespace,
 	return p.execIstioctl(ctx, "proxy-status", fmt.Sprintf("%s.%s", podName, namespace))
 }
 
+// GetAnalyze performs Istio configuration analysis and reports potential issues
+func (p *ProxyConfigClient) GetAnalyze(ctx context.Context, namespace string) (string, error) {
+	if namespace != "" {
+		return p.execIstioctl(ctx, "analyze", "-n", namespace)
+	}
+	return p.execIstioctl(ctx, "analyze")
+}
+
 // execIstioctl executes istioctl commands with proper error handling and timeout
 func (p *ProxyConfigClient) execIstioctl(ctx context.Context, args ...string) (string, error) {
 	// Create context with timeout
@@ -104,58 +111,6 @@ func NewEnvoyAdminClient() *EnvoyAdminClient {
 			Timeout: 30 * time.Second,
 		},
 	}
-}
-
-// GetConfigDumpDirect retrieves configuration dump directly from Envoy admin API
-func (e *EnvoyAdminClient) GetConfigDumpDirect(ctx context.Context, podIP string) (string, error) {
-	return e.getEnvoyEndpoint(ctx, podIP, "config_dump")
-}
-
-// GetClustersDirect retrieves clusters directly from Envoy admin API
-func (e *EnvoyAdminClient) GetClustersDirect(ctx context.Context, podIP string) (string, error) {
-	return e.getEnvoyEndpoint(ctx, podIP, "clusters")
-}
-
-// GetListenersDirect retrieves listeners directly from Envoy admin API
-func (e *EnvoyAdminClient) GetListenersDirect(ctx context.Context, podIP string) (string, error) {
-	return e.getEnvoyEndpoint(ctx, podIP, "listeners")
-}
-
-// GetStatsDirect retrieves stats directly from Envoy admin API
-func (e *EnvoyAdminClient) GetStatsDirect(ctx context.Context, podIP string) (string, error) {
-	return e.getEnvoyEndpoint(ctx, podIP, "stats")
-}
-
-// GetServerInfoDirect retrieves server info directly from Envoy admin API
-func (e *EnvoyAdminClient) GetServerInfoDirect(ctx context.Context, podIP string) (string, error) {
-	return e.getEnvoyEndpoint(ctx, podIP, "server_info")
-}
-
-// getEnvoyEndpoint makes HTTP request to Envoy admin endpoint
-func (e *EnvoyAdminClient) getEnvoyEndpoint(ctx context.Context, podIP, endpoint string) (string, error) {
-	url := fmt.Sprintf("http://%s:15000/%s", podIP, endpoint)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to make request to %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code %d from %s", resp.StatusCode, url)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return string(body), nil
 }
 
 // ProxyConfigSummary provides a summary of all proxy configurations in a namespace

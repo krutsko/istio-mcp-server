@@ -3,6 +3,7 @@ package istio
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/fsnotify/fsnotify"
 	"istio.io/client-go/pkg/clientset/versioned"
@@ -439,6 +440,83 @@ func (i *Istio) CheckExternalDependencyAvailability(ctx context.Context, service
 		result += "   You need to create a Service Entry for '" + externalHost + "' before the service can access it.\n"
 		result += "   Consider creating it in namespace '" + namespace + "' or globally in 'istio-system'.\n"
 	}
+
+	return result, nil
+}
+
+// DiscoverNamespacesWithSidecars finds namespaces that have pods with Istio sidecars
+// and returns them sorted by the number of sidecars (most injected first)
+func (i *Istio) DiscoverNamespacesWithSidecars(ctx context.Context) (string, error) {
+	namespacesWithSidecars := make(map[string]int)
+
+	// Get running pods only (server-side filtering)
+	pods, err := i.kubeClient.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+		FieldSelector: "status.phase=Running",
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to list running pods for Istio sidecar discovery: %w", err)
+	}
+
+	// Count sidecars per namespace
+	for _, pod := range pods.Items {
+		// Skip pods that are not running or have no containers
+		if pod.Status.Phase != "Running" || len(pod.Spec.Containers) == 0 {
+			continue
+		}
+
+		// Check if pod has istio-proxy sidecar
+		for _, container := range pod.Spec.Containers {
+			if container.Name == "istio-proxy" {
+				namespacesWithSidecars[pod.Namespace]++
+				break
+			}
+		}
+	}
+
+	if len(namespacesWithSidecars) == 0 {
+		return "No namespaces with Istio sidecars found", nil
+	}
+
+	// Create a slice of namespace counts for sorting
+	type namespaceCount struct {
+		namespace string
+		count     int
+	}
+
+	var namespaceCounts []namespaceCount
+	for ns, count := range namespacesWithSidecars {
+		namespaceCounts = append(namespaceCounts, namespaceCount{namespace: ns, count: count})
+	}
+
+	// Sort by count (descending) and then by namespace name (ascending)
+	sort.Slice(namespaceCounts, func(i, j int) bool {
+		if namespaceCounts[i].count != namespaceCounts[j].count {
+			return namespaceCounts[i].count > namespaceCounts[j].count
+		}
+		return namespaceCounts[i].namespace < namespaceCounts[j].namespace
+	})
+
+	// Build result string
+	result := fmt.Sprintf("Found %d namespaces with Istio sidecars:\n\n", len(namespaceCounts))
+	result += "Rank | Namespace | Sidecar Count | Recommendation\n"
+	result += "-----|-----------|---------------|----------------\n"
+
+	for rank, nc := range namespaceCounts {
+		var recommendation string
+		if rank == 0 {
+			recommendation = "BEST - Most Istio-injected workloads"
+		} else if rank < 3 { // 3 is arbitrary, adjust as needed
+			recommendation = "Good - High Istio adoption"
+		} else if rank < 5 {
+			recommendation = "Moderate - Some Istio usage"
+		} else {
+			recommendation = "Low - Minimal Istio usage"
+		}
+
+		result += fmt.Sprintf("%4d | %-9s | %13d | %s\n", rank+1, nc.namespace, nc.count, recommendation)
+	}
+
+	result += "\n💡 **Recommendation**: Start with the top-ranked namespace for Istio operations as it likely contains the most Istio configuration and traffic."
 
 	return result, nil
 }
