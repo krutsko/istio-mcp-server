@@ -1,0 +1,24 @@
+.idea/
+.docusaurus/
+node_modules/
+
+# Build artifacts
+istio-mcp-server
+!cmd/istio-mcp-server
+!pkg/istio-mcp-server
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp

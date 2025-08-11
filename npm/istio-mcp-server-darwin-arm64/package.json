@@ -1,0 +1,11 @@
+{
+  "name": "istio-mcp-server-darwin-arm64",
+  "version": "0.0.0",
+  "description": "Istio MCP Server for darwin-arm64",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ]
+}

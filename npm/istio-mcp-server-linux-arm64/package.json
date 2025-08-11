@@ -1,0 +1,11 @@
+{
+  "name": "istio-mcp-server-linux-arm64",
+  "version": "0.0.0",
+  "description": "Istio MCP Server for linux-arm64",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "istio-mcp-server-windows-amd64",
+  "version": "0.0.0",
+  "description": "Istio MCP Server for windows-amd64",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}
