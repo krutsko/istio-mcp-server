@@ -25,10 +25,9 @@ ARCHS = amd64 arm64
 
 CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
-CLEAN_TARGETS += bin/
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/bin/))
-CLEAN_TARGETS += ./npm/$(BINARY_NAME)/.npmrc ./npm/$(BINARY_NAME)/LICENSE.md ./npm/$(BINARY_NAME)/README.md ./npm/$(BINARY_NAME)/bin/
+CLEAN_TARGETS += ./npm/$(BINARY_NAME)/.npmrc ./npm/$(BINARY_NAME)/LICENSE.md ./npm/$(BINARY_NAME)/README.md
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/.npmrc))
 
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
