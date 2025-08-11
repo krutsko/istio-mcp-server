@@ -2,9 +2,6 @@
 .npmrc
 tmp.json
 
-# Binary files (these are built during release)
-*/bin/
-
 # Temporary files
 *.tmp
 *.temp
