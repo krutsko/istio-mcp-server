@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
 	"istio.io/client-go/pkg/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -442,6 +444,242 @@ func (i *Istio) CheckExternalDependencyAvailability(ctx context.Context, service
 	}
 
 	return result, nil
+}
+
+// GetServices retrieves all Kubernetes services in a namespace
+func (i *Istio) GetServices(ctx context.Context, namespace string) (string, error) {
+	services, err := i.kubeClient.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to list services: %w", err)
+	}
+
+	result := fmt.Sprintf("Services in namespace '%s':\n\n", namespace)
+	result += fmt.Sprintf("Found %d services:\n\n", len(services.Items))
+
+	if len(services.Items) == 0 {
+		result += "No services found in this namespace.\n"
+		return result, nil
+	}
+
+	// Group services by type for better organization
+	var clusterIPServices []string
+	var nodePortServices []string
+	var loadBalancerServices []string
+	var headlessServices []string
+
+	for _, service := range services.Items {
+		serviceLine := fmt.Sprintf("%-30s", service.Name)
+
+		// Add service type and cluster IP info
+		switch service.Spec.Type {
+		case "NodePort":
+			nodePortServices = append(nodePortServices, fmt.Sprintf("%s (NodePort: %s)", serviceLine, service.Spec.ClusterIP))
+		case "LoadBalancer":
+			externalIP := "<pending>"
+			if len(service.Status.LoadBalancer.Ingress) > 0 {
+				if service.Status.LoadBalancer.Ingress[0].IP != "" {
+					externalIP = service.Status.LoadBalancer.Ingress[0].IP
+				} else if service.Status.LoadBalancer.Ingress[0].Hostname != "" {
+					externalIP = service.Status.LoadBalancer.Ingress[0].Hostname
+				}
+			}
+			loadBalancerServices = append(loadBalancerServices, fmt.Sprintf("%s (LoadBalancer: %s)", serviceLine, externalIP))
+		default:
+			if service.Spec.ClusterIP == "None" {
+				headlessServices = append(headlessServices, fmt.Sprintf("%s (Headless)", serviceLine))
+			} else {
+				clusterIPServices = append(clusterIPServices, fmt.Sprintf("%s (ClusterIP: %s)", serviceLine, service.Spec.ClusterIP))
+			}
+		}
+	}
+
+	// Output organized by service type
+	if len(clusterIPServices) > 0 {
+		result += " ClusterIP Services:\n"
+		for _, svc := range clusterIPServices {
+			result += fmt.Sprintf("   %s\n", svc)
+		}
+		result += "\n"
+	}
+
+	if len(nodePortServices) > 0 {
+		result += " NodePort Services:\n"
+		for _, svc := range nodePortServices {
+			result += fmt.Sprintf("   %s\n", svc)
+		}
+		result += "\n"
+	}
+
+	if len(loadBalancerServices) > 0 {
+		result += " LoadBalancer Services:\n"
+		for _, svc := range loadBalancerServices {
+			result += fmt.Sprintf("   %s\n", svc)
+		}
+		result += "\n"
+	}
+
+	if len(headlessServices) > 0 {
+		result += " Headless Services:\n"
+		for _, svc := range headlessServices {
+			result += fmt.Sprintf("   %s\n", svc)
+		}
+		result += "\n"
+	}
+
+	result += "Next step: Use 'get-pods-by-service' to find pods backing any of these services\n"
+	result += "   Example: get-pods-by-service --namespace " + namespace + " --service <service-name>\n"
+
+	return result, nil
+}
+
+// GetPodsByService finds pods backing a specific Kubernetes service
+func (i *Istio) GetPodsByService(ctx context.Context, namespace, serviceName string) (string, error) {
+	// Get the service to find its selector
+	service, err := i.kubeClient.CoreV1().Services(namespace).Get(ctx, serviceName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get service %s: %w", serviceName, err)
+	}
+
+	result := fmt.Sprintf("Pods backing service '%s' in namespace '%s':\n\n", serviceName, namespace)
+
+	// Handle headless services or services without selectors
+	if service.Spec.Selector == nil {
+		result += fmt.Sprintf("  Service '%s' has no selector - this is likely:\n", serviceName)
+		result += "   - A headless service with manual endpoints\n"
+		result += "   - An external service (ExternalName type)\n"
+		result += "   - A service with manually configured endpoints\n\n"
+
+		// Try to get endpoints to show what's configured
+		endpoints, err := i.kubeClient.CoreV1().Endpoints(namespace).Get(ctx, serviceName, metav1.GetOptions{})
+		if err == nil && len(endpoints.Subsets) > 0 {
+			result += " Configured endpoints:\n"
+			for _, subset := range endpoints.Subsets {
+				for _, addr := range subset.Addresses {
+					if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+						result += fmt.Sprintf("   - Pod: %s (IP: %s)\n", addr.TargetRef.Name, addr.IP)
+					} else {
+						result += fmt.Sprintf("   - IP: %s\n", addr.IP)
+					}
+				}
+			}
+		}
+		return result, nil
+	}
+
+	// Convert selector to label selector string
+	var selectorParts []string
+	for key, value := range service.Spec.Selector {
+		selectorParts = append(selectorParts, fmt.Sprintf("%s=%s", key, value))
+	}
+	labelSelector := strings.Join(selectorParts, ",")
+
+	// Find pods matching the service selector
+	pods, err := i.kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to list pods for service %s: %w", serviceName, err)
+	}
+
+	// Separate running and non-running pods
+	var runningPods []v1.Pod
+	var nonRunningPods []v1.Pod
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == "Running" {
+			runningPods = append(runningPods, pod)
+		} else {
+			nonRunningPods = append(nonRunningPods, pod)
+		}
+	}
+
+	result += fmt.Sprintf(" Service selector: %s\n", labelSelector)
+	result += fmt.Sprintf(" Total pods found: %d (%d running, %d not running)\n\n",
+		len(pods.Items), len(runningPods), len(nonRunningPods))
+
+	// Show running pods (most important)
+	if len(runningPods) > 0 {
+		result += fmt.Sprintf(" Running pods (%d) - Ready for proxy commands:\n", len(runningPods))
+		for _, pod := range runningPods {
+			// Check if it has Istio sidecar
+			hasIstio := false
+			for _, container := range pod.Spec.Containers {
+				if container.Name == "istio-proxy" {
+					hasIstio = true
+					break
+				}
+			}
+
+			readyIcon := "❌"
+			if isPodReady(pod) {
+				readyIcon = "✅"
+			}
+
+			istioIcon := "🔗"
+			if hasIstio {
+				istioIcon = "🕸️"
+			}
+
+			result += fmt.Sprintf("   %s %s %s\n", readyIcon, istioIcon, pod.Name)
+			result += fmt.Sprintf("      IP: %-15s Node: %s\n", pod.Status.PodIP, pod.Spec.NodeName)
+
+			// Show main application containers (exclude istio-proxy)
+			var appContainers []string
+			for _, container := range pod.Spec.Containers {
+				if container.Name != "istio-proxy" {
+					appContainers = append(appContainers, container.Name)
+				}
+			}
+			result += fmt.Sprintf("      Containers: %s\n", strings.Join(appContainers, ", "))
+
+			if hasIstio {
+				result += fmt.Sprintf("      🕸️  Istio mesh: ENABLED\n")
+			} else {
+				result += fmt.Sprintf("      ⚠️  Istio mesh: NOT ENABLED\n")
+			}
+			result += "\n"
+		}
+	}
+
+	// Show non-running pods for completeness
+	if len(nonRunningPods) > 0 {
+		result += fmt.Sprintf("⏳ Non-running pods (%d):\n", len(nonRunningPods))
+		for _, pod := range nonRunningPods {
+			result += fmt.Sprintf("   ❌ %s (Status: %s)\n", pod.Name, pod.Status.Phase)
+		}
+		result += "\n"
+	}
+
+	if len(runningPods) == 0 {
+		result += "⚠️  No running pods found backing this service!\n"
+		result += "💡 This could mean:\n"
+		result += "   - The deployment is scaled to 0 replicas\n"
+		result += "   - Pods are failing to start\n"
+		result += "   - Label selector mismatch between service and pods\n\n"
+		return result, nil
+	}
+
+	// Add helpful next steps
+	result += "💡 Next steps - Use these pod names with proxy commands:\n"
+	if len(runningPods) > 0 {
+		examplePod := runningPods[0].Name
+		result += fmt.Sprintf("   get-proxy-status --namespace %s --pod %s\n", namespace, examplePod)
+		result += fmt.Sprintf("   get-proxy-clusters --namespace %s --pod %s\n", namespace, examplePod)
+		result += fmt.Sprintf("   get-proxy-listeners --namespace %s --pod %s\n", namespace, examplePod)
+		result += fmt.Sprintf("   get-proxy-routes --namespace %s --pod %s\n", namespace, examplePod)
+	}
+
+	return result, nil
+}
+
+// Helper function to check if pod is ready (already exists but ensuring it's here)
+func isPodReady(pod v1.Pod) bool {
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == v1.PodReady {
+			return condition.Status == v1.ConditionTrue
+		}
+	}
+	return false
 }
 
 // DiscoverNamespacesWithSidecars finds namespaces that have pods with Istio sidecars

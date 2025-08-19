@@ -209,6 +209,34 @@ func (s *Server) initConfigurationTools() []server.ServerTool {
 			),
 			Handler: s.checkExternalDependencyAvailability,
 		},
+		{
+			Tool: mcp.NewTool("get-services",
+				mcp.WithDescription("List all Kubernetes services in a namespace. This is the first step in the workflow to find pods for proxy commands: 1) Use this tool to discover available services, 2) Then use 'get-pods-by-service' to find the specific pods backing a service, 3) Finally use proxy commands (get-proxy-clusters, get-proxy-status, etc.) with the discovered pod names. Perfect for understanding the service landscape before diving into Istio proxy configuration."),
+				mcp.WithString("namespace",
+					mcp.Description("Namespace to list services from (defaults to 'default'). Services are the entry points to your applications."),
+				),
+				mcp.WithTitleAnnotation("Kubernetes: Service Discovery"),
+				mcp.WithReadOnlyHintAnnotation(true),
+				mcp.WithDestructiveHintAnnotation(false),
+			),
+			Handler: s.getServices,
+		},
+		{
+			Tool: mcp.NewTool("get-pods-by-service",
+				mcp.WithDescription("Find all pods backing a specific Kubernetes service - essential for the proxy command workflow. After discovering services with 'get-services', use this tool to find the exact pod names you need for Istio proxy commands. Shows running vs non-running pods, Istio sidecar status, and provides ready-to-use pod names for proxy debugging commands like get-proxy-clusters, get-proxy-status, get-proxy-listeners, etc. This is step 2 in the service→pod→proxy command workflow."),
+				mcp.WithString("namespace",
+					mcp.Description("Namespace containing the service (defaults to 'default')"),
+				),
+				mcp.WithString("service",
+					mcp.Description("Service name to find backing pods for (use 'get-services' first to discover available services)"),
+					mcp.Required(),
+				),
+				mcp.WithTitleAnnotation("Kubernetes: Service Pod Discovery"),
+				mcp.WithReadOnlyHintAnnotation(true),
+				mcp.WithDestructiveHintAnnotation(false),
+			),
+			Handler: s.getPodsByService,
+		},
 	}
 }
 
@@ -587,6 +615,32 @@ func (s *Server) getIstioAnalyze(ctx context.Context, ctr mcp.CallToolRequest) (
 	}
 
 	content, err := s.i.ProxyConfig.GetAnalyze(ctx, namespace)
+	return NewTextResult(content, err), nil
+}
+
+// Handler implementations (add to profile.go)
+func (s *Server) getServices(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	namespace := "default"
+	if ns := ctr.GetArguments()["namespace"]; ns != nil {
+		namespace = ns.(string)
+	}
+	content, err := s.i.GetServices(ctx, namespace)
+	return NewTextResult(content, err), nil
+}
+
+func (s *Server) getPodsByService(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	namespace := "default"
+	if ns := ctr.GetArguments()["namespace"]; ns != nil {
+		namespace = ns.(string)
+	}
+	serviceName := ""
+	if svc := ctr.GetArguments()["service"]; svc != nil {
+		serviceName = svc.(string)
+	}
+	if serviceName == "" {
+		return NewTextResult("", fmt.Errorf("service name is required - use 'get-services' first to discover available services")), nil
+	}
+	content, err := s.i.GetPodsByService(ctx, namespace, serviceName)
 	return NewTextResult(content, err), nil
 }
 
