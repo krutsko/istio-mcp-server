@@ -354,18 +354,6 @@ func (s *Server) initProxyConfigTools() []server.ServerTool {
 			),
 			Handler: s.getProxyStatus,
 		},
-		{
-			Tool: mcp.NewTool("get-istio-analyze",
-				mcp.WithDescription("Analyze Istio configuration and report potential issues, misconfigurations, and best practice violations. This tool runs 'istioctl analyze' to provide comprehensive analysis of your Istio service mesh configuration."),
-				mcp.WithString("namespace",
-					mcp.Description("Namespace to analyze (optional). If specified, analyzes only the specified namespace. If not provided, analyzes the entire cluster."),
-				),
-				mcp.WithTitleAnnotation("Istio: Configuration Analysis"),
-				mcp.WithReadOnlyHintAnnotation(true),
-				mcp.WithDestructiveHintAnnotation(false),
-			),
-			Handler: s.getIstioAnalyze,
-		},
 	}
 }
 
@@ -604,17 +592,6 @@ func (s *Server) getProxyStatus(ctx context.Context, ctr mcp.CallToolRequest) (*
 		content, err = s.i.ProxyConfig.GetProxyStatus(ctx)
 	}
 
-	return NewTextResult(content, err), nil
-}
-
-// getIstioAnalyze performs Istio configuration analysis
-func (s *Server) getIstioAnalyze(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	namespace := ""
-	if ns := ctr.GetArguments()["namespace"]; ns != nil {
-		namespace = ns.(string)
-	}
-
-	content, err := s.i.ProxyConfig.GetAnalyze(ctx, namespace)
 	return NewTextResult(content, err), nil
 }
 

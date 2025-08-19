@@ -68,14 +68,6 @@ func (p *ProxyConfigClient) GetProxyStatusForPod(ctx context.Context, namespace,
 	return p.execIstioctl(ctx, "proxy-status", fmt.Sprintf("%s.%s", podName, namespace))
 }
 
-// GetAnalyze performs Istio configuration analysis and reports potential issues
-func (p *ProxyConfigClient) GetAnalyze(ctx context.Context, namespace string) (string, error) {
-	if namespace != "" {
-		return p.execIstioctl(ctx, "analyze", "-n", namespace)
-	}
-	return p.execIstioctl(ctx, "analyze")
-}
-
 // execIstioctl executes istioctl commands with proper error handling and timeout
 func (p *ProxyConfigClient) execIstioctl(ctx context.Context, args ...string) (string, error) {
 	// Create context with timeout

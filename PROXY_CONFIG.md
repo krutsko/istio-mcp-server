@@ -17,11 +17,11 @@ The Istio MCP Server supports these proxy configuration tools:
 - **get-proxy-bootstrap**: Get Envoy bootstrap configuration from a pod
 - **get-proxy-config-dump**: Get full Envoy configuration dump from a pod
 - **get-proxy-status**: Get proxy status information for all pods or a specific pod
-- **get-istio-analyze**: Analyze Istio configuration and report potential issues
+
 
 ## Implementation Details
 
-- Uses `istioctl proxy-config` commands under the hood (and `istioctl analyze` for configuration analysis)
+- Uses `istioctl proxy-config` commands under the hood
 - Requires `istioctl` to be installed on the system
 - Returns JSON formatted output for easy parsing
 - Includes proper error handling and timeouts
@@ -31,7 +31,7 @@ The Istio MCP Server supports these proxy configuration tools:
 
 Each tool requires:
 - `namespace` (optional, defaults to 'default')
-- `pod` (required for most tools, except `get-proxy-status` and `get-istio-analyze`)
+- `pod` (required for most tools, except `get-proxy-status`)
 
 ### Examples
 
@@ -51,11 +51,7 @@ get-proxy-status --namespace default
 # Get proxy status for a specific pod
 get-proxy-status --namespace default --pod my-app-pod
 
-# Analyze Istio configuration for a specific namespace
-get-istio-analyze --namespace default
 
-# Analyze Istio configuration for the entire cluster
-get-istio-analyze
 ```
 
 ## Prerequisites
